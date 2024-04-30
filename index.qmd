@@ -1,0 +1,117 @@
+---
+title: NHS Workforce Statistics for Lancashire and South Cumbria
+subtitle: Data for May 2023
+author: Rhian Davies
+format: 
+  dashboard:
+    logo: https://raw.githubusercontent.com/nhs-r-community/assets/main/logo/nhsr-logo.svg
+    nav-buttons: [github]
+    theme: cosmo
+---
+
+# Staff groups
+
+## Row
+
+```{r}
+time_series <- readRDS("workforce_timeseries.rds") |> dplyr::filter(ics_name == "Lancashire and South Cumbria")
+staff_group <- readRDS("workforce_staff_group.rds") |> dplyr::filter(ics_name == "Lancashire and South Cumbria")
+```
+
+## Row {height="20%"}
+
+```{r}
+#| content: valuebox
+#| title: "Total staff"
+
+total_fte = 
+  staff_group |>
+  dplyr::filter(organisation_name == "Total")
+
+list(
+  icon = "hospital",
+  color = "primary",
+  value = round(total_fte$total)
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Midwives"
+
+list(
+  icon = "clipboard2-pulse",
+  color = "primary",
+  value = round(total_fte$midwives)
+)
+```
+
+```{r}
+#| content: valuebox
+#| title: "Ambulance staff"
+
+list(
+  icon = "truck-front-fill",
+  color = "primary",
+  value = round(total_fte$ambulance_staff)
+)
+```
+
+::: {.card}
+Full-Time Equivalent (FTE) is a standardised measure of the workload of an employed person and allows for the total workforce workload to be expressed in an equivalent number of full-time staff. 1.0 FTE equates to full-time work of 37.5 hours per week.
+:::
+
+
+## Row
+
+```{r}
+staff_group |>
+  reactable::reactable(defaultColDef = reactable::colDef(
+              format = reactable::colFormat(digits = 0)
+            ),
+            filterable = TRUE,
+            bordered = TRUE,
+            highlight = TRUE) 
+```
+
+
+# Trends
+
+The table below shows the total number of doctors and nurses for each organisation within Lancashire and South Cumbria. We can see that the organisation with the most midwives is the East Lancashire Hospitals NHS Trust with 253 staff.
+
+
+```{r}
+
+biggest_orgs <-
+  time_series |> 
+  dplyr::filter(organisation_name != "Total") |>
+  dplyr::filter(date == max(date)) |>
+  dplyr::slice_max(n = 5, `count`) |>
+  dplyr::pull(organisation_name)
+
+
+plot <- 
+  time_series |>
+  dplyr::filter(organisation_name %in% biggest_orgs) |>
+  dplyr::filter(date > "2020-01-01") |>
+  ggplot2::ggplot(ggplot2::aes(x = date, y = count,
+                               colour = organisation_name)) + 
+  ggplot2::geom_point() + 
+  ggplot2::geom_line() +
+  NHSRtheme::scale_colour_nhs(name = "ICB") +
+  ggplot2::theme_minimal() + 
+  ggplot2::xlab("FTE staff") +
+  ggplot2::ylim("")
+
+plotly::ggplotly(plot)
+```
+
+# ICB map
+
+```{r}
+sf::read_sf("Integrated_Care_Boards_April_2023_EN_BGC_-5820614070354969176.geojson") |>
+  sf::st_transform(4326) |>
+  leaflet::leaflet() |>
+  leaflet::addTiles() |>
+  leaflet::addPolygons()
+```
