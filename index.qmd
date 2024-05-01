@@ -14,8 +14,9 @@ format:
 ## Row
 
 ```{r}
-time_series <- readRDS("workforce_timeseries.rds") |> dplyr::filter(ics_name == "Lancashire and South Cumbria")
-staff_group <- readRDS("workforce_staff_group.rds") |> dplyr::filter(ics_name == "Lancashire and South Cumbria")
+ics = "Lancashire and South Cumbria"
+time_series <- readRDS("workforce_timeseries.rds") |> dplyr::filter(ics_name == ics)
+staff_group <- readRDS("workforce_staff_group.rds") |> dplyr::filter(ics_name == ics)
 ```
 
 ## Row {height="20%"}
@@ -31,7 +32,7 @@ total_fte =
 list(
   icon = "hospital",
   color = "primary",
-  value = round(total_fte$total)
+  value = total_fte$total
 )
 ```
 
@@ -42,7 +43,7 @@ list(
 list(
   icon = "clipboard2-pulse",
   color = "primary",
-  value = round(total_fte$midwives)
+  value = total_fte$midwives
 )
 ```
 
@@ -53,7 +54,7 @@ list(
 list(
   icon = "truck-front-fill",
   color = "primary",
-  value = round(total_fte$ambulance_staff)
+  value = total_fte$ambulance_staff
 )
 ```
 
@@ -61,24 +62,24 @@ list(
 Full-Time Equivalent (FTE) is a standardised measure of the workload of an employed person and allows for the total workforce workload to be expressed in an equivalent number of full-time staff. 1.0 FTE equates to full-time work of 37.5 hours per week.
 :::
 
+## Row  {height="10%"}
+
+::: {.card}
+The table below shows the total number of doctors and nurses for each organisation within `r ics`. We can see that the organisation with the most midwives is the East Lancashire Hospitals NHS Trust with 253 staff.
+:::
+
 
 ## Row
 
 ```{r}
 staff_group |>
-  reactable::reactable(defaultColDef = reactable::colDef(
-              format = reactable::colFormat(digits = 0)
-            ),
-            filterable = TRUE,
-            bordered = TRUE,
-            highlight = TRUE) 
+  dplyr::select(-ics_name) |>
+ DT::datatable()
 ```
-
 
 # Trends
 
 The table below shows the total number of doctors and nurses for each organisation within Lancashire and South Cumbria. We can see that the organisation with the most midwives is the East Lancashire Hospitals NHS Trust with 253 staff.
-
 
 ```{r}
 
@@ -106,12 +107,23 @@ plot <-
 plotly::ggplotly(plot)
 ```
 
-# ICB map
+# ICS map
 
 ```{r}
 sf::read_sf("Integrated_Care_Boards_April_2023_EN_BGC_-5820614070354969176.geojson") |>
   sf::st_transform(4326) |>
   leaflet::leaflet() |>
   leaflet::addTiles() |>
-  leaflet::addPolygons()
+  leaflet::addPolygons(label = ~ICB23NM)
+```
+
+
+## Row
+
+```{r}
+all_staff <- readRDS("workforce_staff_group.rds")
+all_staff |>
+  dplyr::filter(organisation_name == "Total") |>
+  dplyr::select(-organisation_name) |>
+  reactable::reactable()
 ```
